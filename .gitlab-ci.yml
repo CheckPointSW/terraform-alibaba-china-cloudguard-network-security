@@ -33,12 +33,7 @@ prepare_github_release_branch:
   variables:
     ARTIFACTORY: "https://artifactory-product.checkpoint.com/artifactory"
   before_script:
-    # Install GitHub CLI
-    - echo "$ARTIFACTORY/alpine/edge/main" > /etc/apk/repositories
-    - echo "$ARTIFACTORY/alpine/edge/community" >> /etc/apk/repositories
-    - wget -O /etc/apk/keys/devis.rsa.pub $ARTIFACTORY/api/security/keypair/public/repositories/alpine
-    - apk update && apk add openssl ca-certificates github-cli
-
+    - apk update && apk add git
   script:
     - git config --global user.email $GITLAB_USER_EMAIL
     - git config --global user.name $GITLAB_USER_NAME
@@ -68,6 +63,7 @@ prepare_github_release_branch:
 
     # Remove the following files/directories from been reflected to GitHub
     # Add here any file/dir that should not reflected to GitHub, such as internal configuration ci/cd
+    - git reset -- .gitlab-ci.yml .internal .env .vscode .openapi-generator-ignore scripts RELEASE.md .shellcheckignore .github/workflows .spectral
     - git commit -m "$commit_message"
 
     # Push cherry-pick
@@ -75,7 +71,6 @@ prepare_github_release_branch:
 
   only:
     - master
-
 
 
 reflect_github_release_branch:
@@ -89,10 +84,13 @@ reflect_github_release_branch:
     - echo "$ARTIFACTORY/alpine/edge/main" > /etc/apk/repositories
     - echo "$ARTIFACTORY/alpine/edge/community" >> /etc/apk/repositories
     - wget -O /etc/apk/keys/devis.rsa.pub $ARTIFACTORY/api/security/keypair/public/repositories/alpine
-    - apk update && apk add openssl ca-certificates github-cli
-
+    - apk update && apk add openssl ca-certificates github-cli curl jq
+    # Generate GitHub App Token
+    - git clone -b "master" https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.locsec.net/cloudguard-integrations/ci-utils.git ci-utils
+    - chmod +x ci-utils/utils/github_outh/github_app_token.sh
+    - export GH_TOKEN=$(./ci-utils/utils/github_outh/github_app_token.sh)
+    - rm -f -R ci-utils
   script:
-    # Push changes to GitHub...
     # !!! The job uses GitHub access token which must be renewed once a year. It's stored in ENV variables $GH_TOKEN
     - git config --global user.email $GITLAB_USER_EMAIL
     - git config --global user.name chkp-$GITLAB_USER_NAME
@@ -116,7 +114,7 @@ reflect_github_release_branch:
     - git config --global http.postBuffer 524288000
 
     # change origin to github
-    - git remote add github-origin https://chkp-${GITLAB_USER_NAME}:${GH_TOKEN}@github.com/CheckPointSW/terraform-alibaba-china-cloudguard-network-security.git
+    - git remote add github-origin https://x-access-token:${GH_TOKEN}@github.com/CheckPointSW/terraform-alibaba-china-cloudguard-network-security.git
 
     # Fetch latest from GitHub master to ensure up-to-date before pushing
     - git fetch github-origin master || true
