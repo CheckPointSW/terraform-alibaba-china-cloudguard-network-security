@@ -1,0 +1,29 @@
+# Auto-approve bridge caller stub for CheckPointSW/terraform-alibaba-china-cloudguard-network-security (DOPS-12542).
+# Must live on the repo's DEFAULT branch — workflow_dispatch only fires from there.
+# The auto-approve Lambda dispatches this; it calls the central reusable bridge, which
+# (as github-actions[bot], write access -> counts) approves after re-verifying the head
+# sha + the app-4287270-pinned success check, then enables auto-merge.
+name: auto-approve-bridge
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:  { required: true, type: string }
+      head_sha:   { required: true, type: string }
+      check_name: { required: true, type: string }
+
+permissions:
+  checks: read
+  pull-requests: write
+  contents: read
+
+jobs:
+  call:
+    uses: CheckPointSW/.github/.github/workflows/auto-approve-bridge.yml@feat/DOPS-12542-public-mirror-manifests
+    permissions:
+      checks: read
+      pull-requests: write
+      contents: read
+    with:
+      pr_number: ${{ inputs.pr_number }}
+      head_sha: ${{ inputs.head_sha }}
+      check_name: ${{ inputs.check_name }}
