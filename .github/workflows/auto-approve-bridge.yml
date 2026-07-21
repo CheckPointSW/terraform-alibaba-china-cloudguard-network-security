@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   call:
-    uses: CheckPointSW/.github/.github/workflows/auto-approve-bridge.yml@feat/DOPS-12542-public-mirror-manifests
+    uses: CheckPointSW/.github/.github/workflows/auto-approve-bridge.yml@main
     permissions:
       checks: read
       pull-requests: write
