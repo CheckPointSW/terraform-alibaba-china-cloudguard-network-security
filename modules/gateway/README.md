@@ -1,0 +1,203 @@
+# Check Point CloudGuard Security Gateway Terraform Module for Alibaba Cloud
+
+Terraform module which deploys a Check Point Security Gateway on Alibaba Cloud. It supports deploying into an **existing VPC** or creating a **new VPC** automatically.
+
+## Resources Deployed
+
+- [Security Group](https://www.terraform.io/docs/providers/alicloud/r/security_group.html)
+- [Network Interface](https://www.terraform.io/docs/providers/alicloud/r/network_interface.html) - internal ENI (eth1)
+- [EIP](https://www.terraform.io/docs/providers/alicloud/r/eip.html) - conditional creation
+- [Route Entry](https://www.terraform.io/docs/providers/alicloud/r/route_entry.html) - internal default route (conditional creation)
+- [ECS Instance](https://www.terraform.io/docs/providers/alicloud/r/instance.html) - Security Gateway
+
+## Note
+
+- Make sure your region and zone support the required ECS instance types:
+  [Alicloud Instance Types by Region](https://ecs-buy.aliyun.com/instanceTypes/?spm=a2c63.p38356.879954.139.1eeb2d44eZQw2m#/instanceTypeByRegion)
+
+## Usage
+
+```hcl
+module "cloudguard_gateway" {
+  source  = "CheckPointSW/china-cloudguard-network-security/alibaba//modules/gateway"
+  version = "~> 1.0"
+
+  # --- VPC Network Configuration (new VPC) ---
+  vpc_name             = "cp-vpc"
+  vpc_cidr             = "10.0.0.0/16"
+  public_vswitchs_map  = { "cn-hangzhou-j" = 1 }
+  private_vswitchs_map = { "cn-hangzhou-j" = 2 }
+  vswitchs_bit_length  = 8
+
+  # --- ECS Instance Configuration ---
+  gateway_name               = "Check-Point-Gateway-tf"
+  gateway_instance_type      = "ecs.g5ne.xlarge"
+  key_name                   = "my-key-pair"
+  allocate_and_associate_eip = true
+  volume_size                = 200
+  disk_category              = "cloud_efficiency"
+  ram_role_name              = ""
+
+  # --- Check Point Settings ---
+  gateway_version       = "R82.10-BYOL"
+  admin_shell           = "/etc/cli.sh"
+  gateway_SICKey        = "myS1cKey123"
+  gateway_password_hash = ""
+  gateway_TokenKey      = ""
+
+  # --- Advanced Settings (optional) ---
+  resources_tag_name       = ""
+  gateway_hostname         = ""
+  allow_upload_download    = true
+  gateway_bootstrap_script = ""
+}
+```
+
+### Deploy with Terraform
+
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+## VPC
+
+The module uses `vpc_id` to decide how to deploy:
+
+- **New VPC** (default) — leave `vpc_id` empty. The module creates a VPC and vSwitches automatically from `vpc_cidr` and the vSwitch maps.
+- **Existing VPC** — set `vpc_id` and the required vSwitch IDs to deploy into infrastructure you already manage.
+
+```hcl
+# Existing VPC example
+module "cloudguard_gateway" {
+  source  = "CheckPointSW/china-cloudguard-network-security/alibaba//modules/gateway"
+  version = "~> 1.0"
+
+  vpc_id              = "vpc-xxxxxxxxxxxx"
+  public_vswitch_id   = "vsw-xxxxxxxxxxxx"
+  private_vswitch_id  = "vsw-xxxxxxxxxxxx"
+  private_route_table = "vtb-xxxxxxxxxxxx"
+  # ...
+}
+```
+
+### Route table and default route
+
+- **New VPC** — When you create a new VPC (`vpc_id` empty), the module always creates a private route table, attaches it to the private vSwitch, and adds a `0.0.0.0/0` default route via the gateway's internal ENI.
+- **Existing VPC** — When you use an existing VPC, the module does not create a route table. The `0.0.0.0/0` default route is added only if you set `private_route_table` to an existing route table ID. If `private_route_table` is left empty, no default route is created and you must configure routing yourself.
+
+## VSwitches
+
+This module deploys the gateway with two network interfaces:
+
+- **eth0 (public)** — attached to `public_vswitch_id`. This is the gateway's external interface and receives the EIP (if enabled).
+- **eth1 (internal)** — attached to `private_vswitch_id`. This is the gateway's internal interface used to route traffic from private subnets.
+
+## Conditional Creation
+
+**Elastic IP (EIP)** — allocates and associates a public IP to the gateway:
+```hcl
+allocate_and_associate_eip = true
+```
+
+## IPv6 / Dual-Stack
+
+Set `enable_ipv6 = true` to deploy the gateway with dual-stack (IPv4 + IPv6) on both eth0 and eth1.
+
+- **New VPC** — the module enables IPv6 on the VPC and vSwitches, and creates the IPv6 Gateway automatically. No extra setup needed.
+- **Existing VPC** — the VPC and vSwitches must already have IPv6 enabled. If you want public IPv6 (`ipv6_internet_bandwidth > 0`), you must also pass `ipv6_gateway_id` of an existing IPv6 Gateway on that VPC; plan fails otherwise. For internal-only IPv6 (`bandwidth = 0`), `ipv6_gateway_id` is not required.
+- **No public IPv6** — set `ipv6_internet_bandwidth = 0` to skip the IPv6 internet bandwidth allocation. The instance still gets an IPv6 address from the vSwitch, but is reachable only within the VPC.
+
+**New VPC + public IPv6** (default):
+
+```hcl
+enable_ipv6             = true
+ipv6_internet_bandwidth = 100
+```
+
+**Existing VPC + public IPv6** (supply your existing IPv6 Gateway):
+
+```hcl
+enable_ipv6             = true
+ipv6_internet_bandwidth = 100
+ipv6_gateway_id         = "ipv6gw-xxxxxxxxxxxx"
+```
+
+**VPC-internal IPv6 only** (no public IPv6 — no `ipv6_gateway_id` required):
+
+```hcl
+enable_ipv6             = true
+ipv6_internet_bandwidth = 0
+```
+
+## Variables
+
+| Name | Description | Type | Allowed Values | Default | Required |
+|------|-------------|------|----------------|---------|----------|
+| vpc_id | ID of an existing VPC. Leave empty or unset to create a new VPC | string | n/a | `""` | no |
+| public_vswitch_id | Existing public vSwitch ID (eth0). Required when using an existing VPC | string | n/a | `""` | no |
+| private_vswitch_id | Existing private vSwitch ID (eth1). Required when using an existing VPC | string | n/a | `""` | no |
+| private_route_table | Route table ID in which to create the internal default route. Leave empty to skip | string | n/a | `""` | no |
+| vpc_name | Name for the new VPC. Used only when creating a new VPC | string | n/a | `"cp-vpc"` | no |
+| vpc_cidr | CIDR block for the new VPC | string | n/a | `"10.0.0.0/16"` | no |
+| public_vswitchs_map | Map of `{zone = suffix}` for public vSwitches. Required when creating a new VPC; the default `{}` is only valid when `vpc_id` is set (existing-VPC mode) | map(string) | n/a | `{}` | no |
+| private_vswitchs_map | Map of `{zone = suffix}` for private vSwitches. Required when creating a new VPC | map(string) | n/a | `{}` | no |
+| vswitchs_bit_length | Bits to extend vpc_cidr per subnet (e.g. `/16` + `8` = `/24`) | number | n/a | `8` | no |
+| gateway_name | Name tag for the Security Gateway ECS instance | string | n/a | `"Check-Point-Gateway-tf"` | no |
+| gateway_instance_type | ECS instance type for the Security Gateway | string | ecs.g5ne.large, ecs.g5ne.xlarge, ecs.g5ne.2xlarge, ecs.g5ne.4xlarge, ecs.g5ne.8xlarge, ecs.g7ne.large, ecs.g7ne.xlarge, ecs.g7ne.2xlarge, ecs.g7ne.4xlarge, ecs.g7ne.8xlarge | `"ecs.g5ne.xlarge"` | no |
+| key_name | Name of the ECS Key Pair for SSH access | string | n/a | n/a | yes |
+| allocate_and_associate_eip | When `true`, an Elastic IP is allocated and associated with the gateway | bool | true / false | `true` | no |
+| volume_size | Root volume size in GB (minimum 100) | number | >= 100 | `200` | no |
+| disk_category | ECS disk category | string | cloud, cloud_efficiency, cloud_ssd, cloud_essd | `"cloud_efficiency"` | no |
+| ram_role_name | Predefined RAM role name to attach to the gateway instance | string | n/a | `""` | no |
+| instance_tags | Map of tags to apply to the gateway ECS instance | map(string) | n/a | `{}` | no |
+| gateway_version | Gateway version and license | string | R81.20-BYOL, R82-BYOL, R82.10-BYOL, R82.20-BYOL | `"R82.10-BYOL"` | no |
+| admin_shell | Admin shell for advanced CLI configuration | string | /etc/cli.sh, /bin/bash, /bin/csh, /bin/tcsh | `"/etc/cli.sh"` | no |
+| gateway_SICKey | Secure Internal Communication (SIC) key | string | ≥ 8 alphanumeric chars | n/a | yes |
+| gateway_password_hash | Admin user password hash. Generate with: `openssl passwd -6 PASSWORD` | string | n/a | `""` | no |
+| gateway_TokenKey | Smart-1 Cloud token for quick connect (SK180501) | string | n/a | `""` | no |
+| resources_tag_name | Optional prefix applied to resource name tags | string | n/a | `""` | no |
+| gateway_hostname | Optional hostname for the gateway | string | RFC1123 label (1–63 chars) or empty | `""` | no |
+| allow_upload_download | Allow automatic download of Blade Contracts and telemetry data to Check Point | bool | true / false | `true` | no |
+| gateway_bootstrap_script | Optional semicolon-separated commands to run on first boot | string | n/a | `""` | no |
+| primary_ntp | IPv4 address of the primary NTP server | string | n/a | `"ntp.cloud.aliyuncs.com"` | no |
+| secondary_ntp | IPv4 address of the secondary NTP server | string | n/a | `"ntp7.cloud.aliyuncs.com"` | no |
+| enable_ipv6 | Enable IPv6 (dual-stack) on the VPC, vSwitches, ENIs, security group, and routes | bool | true / false | `false` | no |
+| ipv6_gateway_id | Existing IPv6 Gateway ID (`ipv6gw-...`). Required when `enable_ipv6 = true`, using an existing VPC, AND `ipv6_internet_bandwidth > 0` (public IPv6). Not required for internal-only IPv6 (`bandwidth = 0`). Ignored when creating a new VPC | string | n/a | `""` | no |
+| ipv6_internet_bandwidth | IPv6 internet bandwidth in Mbps. Used only when `enable_ipv6 = true`. Set to `0` to skip the IPv6 gateway + bandwidth and keep IPv6 VPC-internal only | number | 0, or 1–2000 (PayByBandwidth) / 1–1000 (PayByTraffic) | `100` | no |
+| ipv6_internet_charge_type | Billing model for the IPv6 internet bandwidth | string | PayByTraffic, PayByBandwidth | `"PayByTraffic"` | no |
+
+## Outputs
+
+### Adding Outputs to Your Configuration
+
+Expose every output the module emits in a single block:
+
+```hcl
+output "cloudguard_gateway" {
+  value = module.cloudguard_gateway
+}
+```
+
+Or expose a single output:
+
+```hcl
+output "gateway_public_ip" {
+  value = module.cloudguard_gateway.gateway_public_ip
+}
+```
+
+### Available Outputs
+
+| Name | Description |
+|------|-------------|
+| gateway_instance_id | The Security Gateway ECS instance ID |
+| gateway_instance_name | The Security Gateway ECS instance name |
+| gateway_public_ip | The Elastic IP address associated with the gateway (empty if EIP not allocated) |
+| internal_eni_id | The ID of the gateway's internal (eth1) ENI |
+| permissive_sg_id | The permissive security group ID |
+| vpc_id | The VPC ID (existing or newly created) |
+| gateway_ipv6_address | The IPv6 address assigned to the gateway's eth0 (empty if `enable_ipv6 = false`) |
+| internal_eni_ipv6_address | The IPv6 address assigned to the gateway's eth1 (empty if `enable_ipv6 = false`) |
+| ipv6_gateway_id | The IPv6 Gateway ID — the newly created gateway when new VPC + `bandwidth > 0`, otherwise the value of `var.ipv6_gateway_id` (which may be empty). Empty when `enable_ipv6 = false` |
