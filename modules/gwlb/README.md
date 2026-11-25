@@ -7,6 +7,8 @@ The module supports deploying into an **existing VPC** or creating a **new secur
 ## Prerequisites
 
 - Minimum CME take on the Security Management Server: **325** or higher.
+- Make sure your region and zone support the required ECS instance types:
+  [Alicloud Instance Types by Region](https://ecs-buy.aliyun.com/instanceTypes/?spm=a2c63.p38356.879954.139.1eeb2d44eZQw2m#/instanceTypeByRegion)
 - The RAM user or role used to deploy this module must have the following actions allowed:
 
 <details>
@@ -258,7 +260,7 @@ Return traffic from the GWLBe out to the internet via the IPv4 gateway.
 | security_vswitchs_ids | List of existing vSwitch IDs. Zone is auto-detected. Required when `vpc_id` is set | list(string) | — | `[]` | no |
 | vswitchs_bit_length | Bits to extend `security_vpc_cidr` per vSwitch (e.g. /16 + 8 = /24) | number | — | `8` | no |
 | key_name | SSH key pair name for instance access | string | — | — | yes |
-| gateway_instance_type | ECS instance type (g5ne or g7ne family) | string | `ecs.g5ne.large`, `ecs.g5ne.xlarge`, `ecs.g5ne.2xlarge`, `ecs.g5ne.4xlarge`, `ecs.g5ne.8xlarge`, `ecs.g7ne.large`, `ecs.g7ne.xlarge`, `ecs.g7ne.2xlarge`, `ecs.g7ne.4xlarge`, `ecs.g7ne.8xlarge` | `"ecs.g5ne.xlarge"` | no |
+| gateway_instance_type | ECS instance type | string | `ecs.g5ne.large`, `ecs.g5ne.xlarge`, `ecs.g5ne.2xlarge`, `ecs.g5ne.4xlarge`, `ecs.g5ne.8xlarge`, `ecs.g7ne.large`, `ecs.g7ne.xlarge`, `ecs.g7ne.2xlarge`, `ecs.g7ne.4xlarge`, `ecs.g7ne.8xlarge`, `ecs.u1-c1m4.xlarge`, `ecs.u1-c1m4.2xlarge`, `ecs.e-c1m4.large`, `ecs.e-c1m4.xlarge`, `ecs.g9i.large`, `ecs.g9i.xlarge`, `ecs.g9i.2xlarge` | `"ecs.g5ne.xlarge"` | no |
 | gateway_version | Check Point version and license | string | `R81.20-BYOL`, `R82-BYOL`, `R82.10-BYOL`, `R82.20-BYOL` | `"R82.10-BYOL"` | no |
 | gateway_SICKey | Secure Internal Communication key | string | ≥ 8 alphanumeric chars | — | yes |
 | gateway_password_hash | Admin password hash. Generate with: `openssl passwd -6 PASSWORD` | string | — | `""` | no |

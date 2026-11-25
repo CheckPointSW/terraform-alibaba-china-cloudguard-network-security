@@ -69,7 +69,7 @@ variable "gateway_internet_max_bandwidth_out" {
 
 variable "gateway_instance_type" {
   type        = string
-  description = "ECS instance type for the Check Point gateway (g5ne or g7ne family)"
+  description = "ECS instance type for the Check Point gateway"
   default     = "ecs.g5ne.xlarge"
 
 }

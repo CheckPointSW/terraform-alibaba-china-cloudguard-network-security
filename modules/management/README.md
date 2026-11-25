@@ -145,7 +145,7 @@ gateway_addresses_ipv6  = "::/0"
 | public_vswitchs_map | Map of `{zone = suffix}` for vSwitches. Required when creating a new VPC; the default `{}` is only valid when `vpc_id` is set (existing-VPC mode) | map(string) | n/a | `{}` | no |
 | vswitchs_bit_length | Bits to extend vpc_cidr per subnet (e.g. `/16` + `8` = `/24`) | number | n/a | `8` | no |
 | instance_name | ECS instance name for the Management Server | string | n/a | `"CP-Management-tf"` | no |
-| instance_type | ECS instance type for the Management Server | string | ecs.g6e.large, ecs.g6e.xlarge, ecs.g6e.2xlarge, ecs.g6e.4xlarge, ecs.g6e.8xlarge, ecs.g7.large, ecs.g7.xlarge, ecs.g7.2xlarge, ecs.g7.4xlarge, ecs.g7.8xlarge | `"ecs.g7.xlarge"` | no |
+| instance_type | ECS instance type for the Management Server | string | ecs.g6e.large, ecs.g6e.xlarge, ecs.g6e.2xlarge, ecs.g6e.4xlarge, ecs.g6e.8xlarge, ecs.g7.large, ecs.g7.xlarge, ecs.g7.2xlarge, ecs.g7.4xlarge, ecs.g7.8xlarge, ecs.g7a.large, ecs.u1-c1m4.large, ecs.u1-c1m4.xlarge, ecs.e-c1m4.large, ecs.g9i.large, ecs.g9i.xlarge, ecs.g9i.2xlarge | `"ecs.g7.xlarge"` | no |
 | key_name | Name of the ECS Key Pair for SSH access | string | n/a | n/a | yes |
 | allocate_and_associate_eip | When `true`, an Elastic IP is allocated and associated with the Management Server | bool | true / false | `true` | no |
 | volume_size | Root volume size in GB (minimum 100) | number | >= 100 | `200` | no |
