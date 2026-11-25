@@ -16,6 +16,17 @@ module "validate" {
   bootstrap_script = var.gateway_bootstrap_script
 }
 
+// Cluster members need 3 ENIs (eth0 cluster, eth1 mgmt, eth2 internal)
+data "alicloud_instance_types" "cluster_member" {}
+
+locals {
+  cluster_member_type = [for t in data.alicloud_instance_types.cluster_member.instance_types : t if t.id == var.gateway_instance_type]
+}
+
+resource "null_resource" "invalid_cluster_instance_type" {
+  count = try(local.cluster_member_type[0].eni_amount, 0) >= 3 ? 0 : "gateway_instance_type '${var.gateway_instance_type}' is not available in this region or supports fewer than 3 ENIs (cluster members require 3)"
+}
+
 // --- VPC (created only when vpc_id is not provided) ---
 module "vpc" {
   count  = local.create_vpc ? 1 : 0

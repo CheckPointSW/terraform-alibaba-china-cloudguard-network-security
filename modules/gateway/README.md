@@ -145,7 +145,7 @@ ipv6_internet_bandwidth = 0
 | private_vswitchs_map | Map of `{zone = suffix}` for private vSwitches. Required when creating a new VPC | map(string) | n/a | `{}` | no |
 | vswitchs_bit_length | Bits to extend vpc_cidr per subnet (e.g. `/16` + `8` = `/24`) | number | n/a | `8` | no |
 | gateway_name | Name tag for the Security Gateway ECS instance | string | n/a | `"Check-Point-Gateway-tf"` | no |
-| gateway_instance_type | ECS instance type for the Security Gateway | string | ecs.g5ne.large, ecs.g5ne.xlarge, ecs.g5ne.2xlarge, ecs.g5ne.4xlarge, ecs.g5ne.8xlarge, ecs.g7ne.large, ecs.g7ne.xlarge, ecs.g7ne.2xlarge, ecs.g7ne.4xlarge, ecs.g7ne.8xlarge | `"ecs.g5ne.xlarge"` | no |
+| gateway_instance_type | ECS instance type for the Security Gateway | string | ecs.g5ne.large, ecs.g5ne.xlarge, ecs.g5ne.2xlarge, ecs.g5ne.4xlarge, ecs.g5ne.8xlarge, ecs.g7ne.large, ecs.g7ne.xlarge, ecs.g7ne.2xlarge, ecs.g7ne.4xlarge, ecs.g7ne.8xlarge, ecs.u1-c1m4.xlarge, ecs.u1-c1m4.2xlarge, ecs.e-c1m4.large, ecs.e-c1m4.xlarge, ecs.g9i.large, ecs.g9i.xlarge, ecs.g9i.2xlarge | `"ecs.g5ne.xlarge"` | no |
 | key_name | Name of the ECS Key Pair for SSH access | string | n/a | n/a | yes |
 | allocate_and_associate_eip | When `true`, an Elastic IP is allocated and associated with the gateway | bool | true / false | `true` | no |
 | volume_size | Root volume size in GB (minimum 100) | number | >= 100 | `200` | no |

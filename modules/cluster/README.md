@@ -15,6 +15,7 @@ Terraform module which deploys a Check Point CloudGuard High Availability Cluste
 
 - Make sure your region and zone support the required ECS instance types:
   [Alicloud Instance Types by Region](https://ecs-buy.aliyun.com/instanceTypes/?spm=a2c63.p38356.879954.139.1eeb2d44eZQw2m#/instanceTypeByRegion)
+- Cluster members require 3 network interfaces (ENIs). The plan fails if the selected instance type supports fewer (for example, the `ecs.e-c1m4` types) or is not available in the region.
 - All three vSwitches (cluster, management, private) must be in the **same availability zone**.
 
 ## Usage
@@ -138,7 +139,7 @@ management_ip_address = "1.2.3.4"
 | private_vswitchs_map | Map of `{zone = suffix}` for private vSwitches. Required when creating a new VPC | map(string) | n/a | `{}` | no |
 | vswitchs_bit_length | Bits to extend vpc_cidr per subnet (e.g. `/16` + `8` = `/24`) | number | n/a | `8` | no |
 | gateway_name | Name tag prefix for the cluster member ECS instances | string | n/a | `"Check-Point-Cluster-tf"` | no |
-| gateway_instance_type | ECS instance type for the cluster members | string | ecs.g5ne.large, ecs.g5ne.xlarge, ecs.g5ne.2xlarge, ecs.g5ne.4xlarge, ecs.g5ne.8xlarge, ecs.g7ne.large, ecs.g7ne.xlarge, ecs.g7ne.2xlarge, ecs.g7ne.4xlarge, ecs.g7ne.8xlarge | `"ecs.g5ne.xlarge"` | no |
+| gateway_instance_type | ECS instance type for the cluster members | string | ecs.g5ne.large, ecs.g5ne.xlarge, ecs.g5ne.2xlarge, ecs.g5ne.4xlarge, ecs.g5ne.8xlarge, ecs.g7ne.large, ecs.g7ne.xlarge, ecs.g7ne.2xlarge, ecs.g7ne.4xlarge, ecs.g7ne.8xlarge, ecs.u1-c1m4.xlarge, ecs.u1-c1m4.2xlarge, ecs.e-c1m4.large, ecs.e-c1m4.xlarge, ecs.g9i.large, ecs.g9i.xlarge, ecs.g9i.2xlarge | `"ecs.g5ne.xlarge"` | no |
 | key_name | Name of the ECS Key Pair for SSH access to both cluster members | string | n/a | n/a | yes |
 | allocate_and_associate_eip | When `true`, EIPs are allocated for the cluster VIP and each member's management interface | bool | true / false | `true` | no |
 | volume_size | Root volume size in GB (minimum 100) | number | >= 100 | `200` | no |
